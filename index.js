@@ -17,7 +17,7 @@ const processDomain = (domain, chatId) => {
                 const cert = socket.getPeerX509Certificate();
                 const expiration = new Date(cert.validTo);
 
-                if (expiration - Date.now() < ms.days(40).ms) {
+                if (expiration - Date.now() < ms.days(30).ms) {
                     await bot.api.sendMessage(
                         chatId,
                         `⌛️ the ssl cert for ${domain} will expire in ${Math.floor(
