@@ -1,11 +1,24 @@
 const { Bot } = require('grammy');
-const { readFile } = require('fs/promises');
+const { readFile, writeFile } = require('fs/promises');
 const ms = require('./ms');
 const tls = require('tls');
 
 require('dotenv').config();
 
 const bot = new Bot(process.env.BOT_TOKEN);
+
+const getData = async () => {
+    try {
+        const data = await readFile('data.json', 'utf-8');
+        return JSON.parse(data);
+    } catch (error) {
+        return { expiringDomains: [] };
+    }
+};
+
+const saveData = async (data) => {
+    await writeFile('data.json', JSON.stringify(data));
+};
 
 const processDomain = (domain, chatId) => {
     return new Promise(resolve => {
@@ -24,6 +37,23 @@ const processDomain = (domain, chatId) => {
                             (expiration - Date.now()) / 864e5,
                         )} days`,
                     );
+
+                    const data = await getData();
+                    if (!data.expiringDomains.includes(domain)) {
+                        data.expiringDomains.push(domain);
+                        await saveData(data);
+                    }
+               } else {
+                    const data = await getData();
+                    if (data.expiringDomains.includes(domain)) {
+                        await bot.api.sendMessage(
+                            chatId,
+                            `✅ the ssl cert for ${domain} has been renewed`,
+                        );
+
+                        data.expiringDomains = data.expiringDomains.filter(d => d !== domain);
+                        await saveData(data);
+                    }
                 }
 
                 resolve();
