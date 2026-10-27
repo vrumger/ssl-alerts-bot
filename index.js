@@ -21,7 +21,7 @@ const saveData = async data => {
 };
 
 const processDomain = (domain, chatId) => {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
         const socket = tls.connect(
             {
                 port: 443,
@@ -68,6 +68,12 @@ const processDomain = (domain, chatId) => {
                 resolve();
             },
         );
+
+        socket.setTimeout(ms.seconds(30).ms, () => {
+            socket.destroy(new Error('Connection timed out'));
+        });
+
+        socket.on('error', reject);
     });
 };
 
@@ -79,7 +85,12 @@ const processDomains = async () => {
 
         if (domain && chatId) {
             console.log(`Processing ${domain}`, chatId);
-            await processDomain(domain, chatId);
+
+            try {
+                await processDomain(domain, chatId);
+            } catch (error) {
+                console.error(`Failed to process ${domain}:`, error);
+            }
         }
     });
 };
