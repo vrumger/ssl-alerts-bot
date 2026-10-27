@@ -23,7 +23,12 @@ const saveData = async data => {
 const processDomain = (domain, chatId) => {
     return new Promise(resolve => {
         const socket = tls.connect(
-            { port: 443, host: domain, servername: domain },
+            {
+                port: 443,
+                host: domain,
+                servername: domain,
+                rejectUnauthorized: false,
+            },
             async () => {
                 socket.end();
 
@@ -31,11 +36,13 @@ const processDomain = (domain, chatId) => {
                 const expiration = new Date(cert.validTo);
 
                 if (expiration - Date.now() < ms.days(30).ms) {
+                    const days = Math.floor((expiration - Date.now()) / 864e5);
+
                     await bot.api.sendMessage(
                         chatId,
-                        `⌛️ the ssl cert for ${domain} will expire in ${Math.floor(
-                            (expiration - Date.now()) / 864e5,
-                        )} days`,
+                        days < 0
+                            ? `❌ the ssl cert for ${domain} has expired`
+                            : `⌛️ the ssl cert for ${domain} will expire in ${days} days`,
                     );
 
                     const data = await getData();
