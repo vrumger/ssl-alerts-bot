@@ -106,5 +106,10 @@ const processDomains = async () => {
     }
 };
 
-processDomains();
-setInterval(processDomains, ms.days(3.5).ms);
+const run = () =>
+    processDomains().catch(error => {
+        console.error('Failed to process domains:', error);
+    });
+
+run();
+setInterval(run, ms.days(3.5).ms);
