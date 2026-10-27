@@ -1,15 +1,19 @@
 const { Bot } = require('grammy');
 const { readFile, writeFile } = require('fs/promises');
 const ms = require('./ms');
+const path = require('path');
 const tls = require('tls');
 
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+const DATA_FILE = path.join(__dirname, 'data.json');
+const DOMAINS_FILE = path.join(__dirname, 'domains.txt');
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
 const getData = async () => {
     try {
-        const data = await readFile('data.json', 'utf-8');
+        const data = await readFile(DATA_FILE, 'utf-8');
         return JSON.parse(data);
     } catch (error) {
         return { expiringDomains: [] };
@@ -17,7 +21,7 @@ const getData = async () => {
 };
 
 const saveData = async data => {
-    await writeFile('data.json', JSON.stringify(data));
+    await writeFile(DATA_FILE, JSON.stringify(data));
 };
 
 const getCertificate = domain => {
@@ -85,7 +89,7 @@ const processDomain = async (domain, chatId) => {
 };
 
 const processDomains = async () => {
-    const domains = await readFile('domains.txt', 'utf-8');
+    const domains = await readFile(DOMAINS_FILE, 'utf-8');
 
     for (const line of domains.split('\n')) {
         const [domain, chatId] = line.trim().split(/\s+/);
