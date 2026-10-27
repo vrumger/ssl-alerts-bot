@@ -87,7 +87,7 @@ const processDomain = async (domain, chatId) => {
 const processDomains = async () => {
     const domains = await readFile('domains.txt', 'utf-8');
 
-    domains.split('\n').forEach(async line => {
+    for (const line of domains.split('\n')) {
         const [domain, chatId] = line.split(' ');
 
         if (domain && chatId) {
@@ -99,7 +99,7 @@ const processDomains = async () => {
                 console.error(`Failed to process ${domain}:`, error);
             }
         }
-    });
+    }
 };
 
 processDomains();
