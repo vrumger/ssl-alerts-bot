@@ -16,7 +16,7 @@ const getData = async () => {
     }
 };
 
-const saveData = async (data) => {
+const saveData = async data => {
     await writeFile('data.json', JSON.stringify(data));
 };
 
@@ -43,7 +43,7 @@ const processDomain = (domain, chatId) => {
                         data.expiringDomains.push(domain);
                         await saveData(data);
                     }
-               } else {
+                } else {
                     const data = await getData();
                     if (data.expiringDomains.includes(domain)) {
                         await bot.api.sendMessage(
@@ -51,7 +51,9 @@ const processDomain = (domain, chatId) => {
                             `✅ the ssl cert for ${domain} has been renewed`,
                         );
 
-                        data.expiringDomains = data.expiringDomains.filter(d => d !== domain);
+                        data.expiringDomains = data.expiringDomains.filter(
+                            d => d !== domain,
+                        );
                         await saveData(data);
                     }
                 }
