@@ -88,7 +88,7 @@ const processDomains = async () => {
     const domains = await readFile('domains.txt', 'utf-8');
 
     for (const line of domains.split('\n')) {
-        const [domain, chatId] = line.split(' ');
+        const [domain, chatId] = line.trim().split(/\s+/);
 
         if (domain && chatId) {
             console.log(`Processing ${domain}`, chatId);
