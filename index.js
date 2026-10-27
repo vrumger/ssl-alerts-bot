@@ -20,7 +20,7 @@ const saveData = async data => {
     await writeFile('data.json', JSON.stringify(data));
 };
 
-const processDomain = (domain, chatId) => {
+const getCertificate = domain => {
     return new Promise((resolve, reject) => {
         const socket = tls.connect(
             {
@@ -29,43 +29,15 @@ const processDomain = (domain, chatId) => {
                 servername: domain,
                 rejectUnauthorized: false,
             },
-            async () => {
+            () => {
+                const cert = socket.getPeerX509Certificate();
                 socket.end();
 
-                const cert = socket.getPeerX509Certificate();
-                const expiration = new Date(cert.validTo);
-
-                if (expiration - Date.now() < ms.days(30).ms) {
-                    const days = Math.floor((expiration - Date.now()) / 864e5);
-
-                    await bot.api.sendMessage(
-                        chatId,
-                        days < 0
-                            ? `❌ the ssl cert for ${domain} has expired`
-                            : `⌛️ the ssl cert for ${domain} will expire in ${days} days`,
-                    );
-
-                    const data = await getData();
-                    if (!data.expiringDomains.includes(domain)) {
-                        data.expiringDomains.push(domain);
-                        await saveData(data);
-                    }
+                if (cert) {
+                    resolve(cert);
                 } else {
-                    const data = await getData();
-                    if (data.expiringDomains.includes(domain)) {
-                        await bot.api.sendMessage(
-                            chatId,
-                            `✅ the ssl cert for ${domain} has been renewed`,
-                        );
-
-                        data.expiringDomains = data.expiringDomains.filter(
-                            d => d !== domain,
-                        );
-                        await saveData(data);
-                    }
+                    reject(new Error('No certificate was presented'));
                 }
-
-                resolve();
             },
         );
 
@@ -75,6 +47,41 @@ const processDomain = (domain, chatId) => {
 
         socket.on('error', reject);
     });
+};
+
+const processDomain = async (domain, chatId) => {
+    const cert = await getCertificate(domain);
+    const expiration = new Date(cert.validTo);
+
+    if (expiration - Date.now() < ms.days(30).ms) {
+        const days = Math.floor((expiration - Date.now()) / 864e5);
+
+        await bot.api.sendMessage(
+            chatId,
+            days < 0
+                ? `❌ the ssl cert for ${domain} has expired`
+                : `⌛️ the ssl cert for ${domain} will expire in ${days} days`,
+        );
+
+        const data = await getData();
+        if (!data.expiringDomains.includes(domain)) {
+            data.expiringDomains.push(domain);
+            await saveData(data);
+        }
+    } else {
+        const data = await getData();
+        if (data.expiringDomains.includes(domain)) {
+            await bot.api.sendMessage(
+                chatId,
+                `✅ the ssl cert for ${domain} has been renewed`,
+            );
+
+            data.expiringDomains = data.expiringDomains.filter(
+                d => d !== domain,
+            );
+            await saveData(data);
+        }
+    }
 };
 
 const processDomains = async () => {
